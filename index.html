@@ -799,7 +799,7 @@
     document.addEventListener('keydown', (e) => {
         konamiCode.push(e.key);
         konamiCode = konamiCode.slice(-10);
-        if (konamiCode.join(',') === 'ArrowUp,ArrowUp,ArrowDown') {
+        if (konamiCode.join(',') === 'm') {
             document.getElementById('adminPanel').style.display = 'block';
             sounds.megaWin.play();
         }
