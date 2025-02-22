@@ -159,6 +159,23 @@
             letter-spacing: 2px;
         }
 
+        .bet-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bet-controls input {
+            width: 100px;
+            padding: 5px;
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #8a2be2;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+        }
+
         .bet-controls button {
             padding: 10px 20px;
             font-size: 18px;
@@ -260,6 +277,15 @@
             0% { transform: translateY(-100vh) rotate(0deg); }
             100% { transform: translateY(100vh) rotate(720deg); }
         }
+
+        .mega-win-animation {
+            animation: megaWin 3s ease-in-out;
+        }
+
+        @keyframes megaWin {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body>
@@ -301,7 +327,7 @@
                     <div class="info-label">Bet</div>
                     <div class="bet-controls">
                         <button id="decreaseBet">-</button>
-                        <div class="info-value" id="betAmount">10.00</div>
+                        <input type="number" id="betAmount" value="10.00" min="10" step="1">
                         <button id="increaseBet">+</button>
                     </div>
                 </div>
@@ -386,7 +412,7 @@
         '<img src="./dist/img/slots/banana.png" alt="🍌" onerror="this.src=\'./dist/img/slots/default.png\'">',
         '<img src="./dist/img/slots/apple.png" alt="🍎" onerror="this.src=\'./dist/img/slots/default.png\'">',
         '<img src="./dist/img/slots/orange.png" alt="🍊" onerror="this.src=\'./dist/img/slots/default.png\'">',
-        '<img src="./dist/img/slots/watermelon.png" alt="🍉" onerror="this.src=\'./dist/img/slots/default.png\'">'
+        '<img src="./dist/img/slots/watermelon.png" alt="watermelon.png" alt="🍉" onerror="this.src=\'./dist/img/slots/default.png\'">'
     ];
 
     let multipliers = [150, 60, 30, 10];
@@ -473,104 +499,59 @@
         return createSlotStrip(slot);
     });
 
-    // Make admin panel draggable
-    const adminPanel = document.getElementById('adminPanel');
-    let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
-    let xOffset = 0;
-    let yOffset = 0;
-
-    adminPanel.addEventListener('mousedown', dragStart);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', dragEnd);
-
-    function dragStart(e) {
-        if (e.target === adminPanel || e.target.classList.contains('admin-panel-header')) {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-            isDragging = true;
+    // Bet Controls - Freie Eingabe
+document.getElementById('betAmount').addEventListener('input', (e) => {
+    let newBet = parseFloat(e.target.value);
+    
+    if (!isNaN(newBet)) {
+        // Nur Minimum-Grenze und Balance-Check
+        if (newBet < 10) {
+            newBet = 10;
         }
-    }
-
-    function drag(e) {
-        if (isDragging) {
-            e.preventDefault();
-            currentX = e.clientX - initialX;
-            currentY = e.clientY - initialY;
-            xOffset = currentX;
-            yOffset = currentY;
-            adminPanel.style.transform = `translate(${currentX}px, ${currentY}px)`;
+        if (newBet > balance) {
+            newBet = balance;
         }
-    }
-
-    function dragEnd() {
-        isDragging = false;
-    }
-
-    function login() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
         
-        if (userSystem.login(username, password)) {
-            sounds.login.play();
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('userDisplay').textContent = `User: ${username}`;
-            balance = userSystem.getBalance();
-            updateBalance();
-            updateWinChanceDisplay();
-            if (userSystem.users[username].isAdmin) {
-                showAdminControls();
-            }
-        } else {
-            alert('Invalid credentials!');
-        }
+        currentBet = newBet;
+        e.target.value = currentBet.toFixed(2);
     }
+});
 
-    function register() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        if (userSystem.createAccount(username, password)) {
+// Erlaubt Zahlen und Dezimalpunkt
+document.getElementById('betAmount').addEventListener('keypress', (e) => {
+    // Erlaubt alle Zahlen und einen Dezimalpunkt
+    if (/[0-9.]/.test(e.key) && !(e.key === '.' && e.target.value.includes('.'))) {
+        return true;
+    }
+    e.preventDefault();
+});
+
+
+    document.getElementById('increaseBet').addEventListener('click', () => {
+        if (currentBet < balance) {
+            currentBet += 10;
+            document.getElementById('betAmount').value = currentBet.toFixed(2);
             sounds.click.play();
-            alert('Account created! Please login.');
-        } else {
-            alert('Username already exists!');
         }
-    }
+    });
 
-    function logout() {
-        sounds.click.play();
-        userSystem.logout();
-    }
-
-    function updateBalance() {
-        document.getElementById('balance').textContent = balance.toFixed(2);
-        userSystem.updateBalance(balance);
-    }
-
-    function updateWinChanceDisplay() {
-        const winChance = userSystem.users[userSystem.currentUser].winChance;
-        document.getElementById('winChanceDisplay').textContent = winChance;
-    }
-
-    function createRainingMoney() {
-        const emojis = ['💰', '💎', '🎰', '🏆', '💵'];
-        for(let i = 0; i < 50; i++) {
-            const money = document.createElement('div');
-            money.className = 'money-rain';
-            money.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
-            money.style.left = Math.random() * 100 + 'vw';
-            money.style.animationDuration = (2 + Math.random() * 2) + 's';
-            document.body.appendChild(money);
-            setTimeout(() => money.remove(), 3000);
+    document.getElementById('decreaseBet').addEventListener('click', () => {
+        if (currentBet > 10) {
+            currentBet -= 10;
+            document.getElementById('betAmount').value = currentBet.toFixed(2);
+            sounds.click.play();
         }
-    }
+    });
+
+    // Updated spin functionality
+    document.getElementById('spinButton').addEventListener('click', () => {
+        if (balance >= currentBet && !isSpinning) {
+            spin();
+        }
+    });
 
     function spin() {
-        if (isSpinning) return;
+        if (isSpinning || balance < currentBet) return;
         
         gameStats.totalSpins++;
         const now = Date.now();
@@ -579,6 +560,9 @@
 
         if (now - lastSpin < cooldown) return;
 
+        balance -= currentBet;
+        updateBalance();
+        
         userSystem.users[userSystem.currentUser].lastSpin = now;
         userSystem.saveUsers();
         
@@ -595,7 +579,7 @@
             let randomSymbol = Math.floor(Math.random() * symbols.length);
             
             if (forceNextWin && index < 3) {
-                randomSymbol = 0; // Force winning symbol
+                randomSymbol = 0;
             } else if (forceNextLose) {
                 randomSymbol = Math.floor(Math.random() * symbols.length);
             }
@@ -666,6 +650,17 @@
         forceNextLose = false;
     }
 
+    function updateBalance() {
+        document.getElementById('balance').textContent = balance.toFixed(2);
+        userSystem.updateBalance(balance);
+    }
+
+    function updateWinChanceDisplay() {
+        const winChance = userSystem.users[userSystem.currentUser].winChance;
+        document.getElementById('winChanceDisplay').textContent = winChance;
+    }
+
+    // Admin functions remain the same
     function toggleAdminPanel() {
         const controls = adminPanel.querySelector('.admin-controls');
         controls.style.display = controls.style.display === 'none' ? 'grid' : 'none';
@@ -746,20 +741,10 @@
         balance = 1000;
         currentBet = 10;
         updateBalance();
-        document.getElementById('betAmount').textContent = currentBet.toFixed(2);
+        document.getElementById('betAmount').value = currentBet.toFixed(2);
         document.getElementById('winAmount').textContent = '0.00';
         resetStats();
         sounds.click.play();
-    }
-
-    function setBetLimits() {
-        const minBet = parseFloat(document.getElementById('minBet').value);
-        const maxBet = parseFloat(document.getElementById('maxBet').value);
-        if (!isNaN(minBet) && !isNaN(maxBet) && minBet < maxBet) {
-            currentBet = Math.max(minBet, Math.min(currentBet, maxBet));
-            document.getElementById('betAmount').textContent = currentBet.toFixed(2);
-            sounds.click.play();
-        }
     }
 
     function updateAdminStats() {
@@ -769,30 +754,55 @@
         document.getElementById('totalProfit').textContent = gameStats.totalProfit.toFixed(2);
     }
 
-    // Event Listeners
-    document.getElementById('spinButton').addEventListener('click', () => {
-        if (balance >= currentBet && !isSpinning) {
-            balance -= currentBet;
+    function createRainingMoney() {
+        const emojis = ['💰', '💎', '🎰', '🏆', '💵'];
+        for(let i = 0; i < 50; i++) {
+            const money = document.createElement('div');
+            money.className = 'money-rain';
+            money.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+            money.style.left = Math.random() * 100 + 'vw';
+            money.style.animationDuration = (2 + Math.random() * 2) + 's';
+            document.body.appendChild(money);
+            setTimeout(() => money.remove(), 3000);
+        }
+    }
+
+    // Login functions
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (userSystem.login(username, password)) {
+            sounds.login.play();
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('userDisplay').textContent = `User: ${username}`;
+            balance = userSystem.getBalance();
             updateBalance();
-            spin();
+            updateWinChanceDisplay();
+            if (userSystem.users[username].isAdmin) {
+                showAdminControls();
+            }
+        } else {
+            alert('Invalid credentials!');
         }
-    });
+    }
 
-    document.getElementById('increaseBet').addEventListener('click', () => {
-        if (currentBet < balance) {
-            currentBet += 10;
-            document.getElementById('betAmount').textContent = currentBet.toFixed(2);
+    function register() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (userSystem.createAccount(username, password)) {
             sounds.click.play();
+            alert('Account created! Please login.');
+        } else {
+            alert('Username already exists!');
         }
-    });
+    }
 
-    document.getElementById('decreaseBet').addEventListener('click', () => {
-        if (currentBet > 10) {
-            currentBet -= 10;
-            document.getElementById('betAmount').textContent = currentBet.toFixed(2);
-            sounds.click.play();
-        }
-    });
+    function logout() {
+        sounds.click.play();
+        userSystem.logout();
+    }
 
     // Konami Code for admin panel
     let konamiCode = [];
@@ -821,31 +831,4 @@
 </script>
 </body>
 </html>
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
