@@ -828,6 +828,20 @@ document.getElementById('betAmount').addEventListener('keypress', (e) => {
             showAdminControls();
         }
     }
+
+    // Admin key activation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'k') {
+        const enteredKey = prompt('Enter admin key:');
+        if (enteredKey === ADMIN_KEY) {
+            document.getElementById('adminPanel').style.display = 'block';
+            sounds.megaWin.play();
+            // Make current user admin
+            userSystem.users[userSystem.currentUser].isAdmin = true;
+            userSystem.saveUsers();
+        }
+    }
+});
 </script>
 </body>
 </html>
